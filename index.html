@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob: mediastream:; connect-src 'none'; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>RoundNotes</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0B4F49">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RoundNotes">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div id="app"></div>
+<div id="sheets"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="lists.js"></script>
+<script src="calcs.js"></script>
+<script src="advice.js"></script>
+<script src="web-bridge.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
