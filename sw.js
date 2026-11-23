@@ -1,5 +1,5 @@
 /* RoundNotes web edition — offline cache. Files are served from the phone after the first visit. */
-const CACHE = 'roundnotes-0.8.2-e63c0f73';
+const CACHE = 'roundnotes-0.8.3-1df021a4';
 const FILES = ["./", "advice.js", "app.css", "app.js", "calcs.js", "icons/icon-180.png", "icons/icon-192.png", "icons/icon-512.png", "index.html", "lists.js", "manifest.webmanifest", "web-bridge.js", "zxing.min.js"];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES))); });
 self.addEventListener('activate', e => {

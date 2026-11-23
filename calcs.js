@@ -95,17 +95,31 @@ function interpretABG(v) {
     else lines.push('Between acute and chronic compensation');
   }
   const g = anionGap(v);
+  const allNormal = !acid && !alk && !highC && !lowC && !highH && !lowH;
   if (g) {
     const label = g.agc !== null ? `Anion gap ${r0(g.ag)} (albumin-corrected ${r1(g.agc)})` : `Anion gap ${r0(g.ag)}`;
     if (g.use > 12) {
+      const da = deltaAnalysis(g, hco3);
       lines.push(`${label} → high anion gap metabolic acidosis${primary === 'metacid' ? '' : ' is also present'}`);
-      if (hco3 < 24) {
-        const dr = (g.use - 12) / (24 - hco3);
-        lines.push(`Delta ratio ${r2(dr)} → ${deltaText(dr)}`);
-      }
+      lines.push(...da.lines);
+      // The gap changes the verdict, not just the notes.
+      const hasAlk = primary === 'metalk' || /metabolic alkalosis/.test(main);
+      if (primary === 'metacid') main = da.alk ? 'High anion gap metabolic acidosis + metabolic alkalosis' : da.nagma ? 'Mixed high and normal anion gap metabolic acidosis' : 'High anion gap metabolic acidosis';
+      else if (allNormal) {
+        main = da.alk ? 'Hidden mixed disorder: high anion gap metabolic acidosis + metabolic alkalosis' : 'Normal pH, pCO2 and HCO3, but the anion gap is raised';
+        lines.unshift(da.alk ? 'pH, pCO2 and HCO3 look normal because the two metabolic disorders cancel out (e.g. vomiting or diuretics with lactic or ketoacidosis, or kidney failure)' : 'Check the gap again with fresh electrolytes');
+        level = da.alk ? 'high' : 'warn';
+      } else if (!acid && !alk) {
+        if (lowC && lowH) main = `Normal pH: respiratory alkalosis + high anion gap metabolic acidosis${da.alk ? ' + metabolic alkalosis' : ''}`;
+        else if (highC && highH) main = 'Normal pH: respiratory acidosis + metabolic alkalosis + high anion gap metabolic acidosis';
+        else main = da.alk ? 'Mixed high anion gap metabolic acidosis + metabolic alkalosis (normal pH)' : 'High anion gap metabolic acidosis with a normal pH — look for a second disorder';
+      } else if (/^Mixed metabolic and respiratory acidosis/.test(main)) main = `Mixed high anion gap metabolic acidosis + respiratory acidosis${da.alk ? ' + metabolic alkalosis' : ''}`;
+      else main += ` + high anion gap metabolic acidosis${da.alk && !hasAlk ? ' + metabolic alkalosis' : ''}`;
+      if (level === 'ok') level = 'warn';
     } else if (primary === 'metacid') lines.push(`${label} → normal anion gap (hyperchloremic) acidosis`);
     else lines.push(label);
   } else if (primary === 'metacid') lines.push('Add Na and Cl to check the anion gap');
+  else if (allNormal) lines.push('Add Na and Cl: a normal blood gas can still hide a high anion gap acidosis with a metabolic alkalosis');
   if (has(v.po2)) {
     let fio2 = has(v.fio2) ? v.fio2 : 21;
     if (fio2 > 1) fio2 = fio2 / 100;
@@ -124,6 +138,20 @@ function deltaText(dr) {
   if (dr < 0.8) return 'combined high and normal anion gap acidosis';
   if (dr <= 2) return 'pure high anion gap acidosis';
   return 'high anion gap acidosis plus metabolic alkalosis (or pre-existing compensated respiratory acidosis)';
+}
+// Raised anion gap: compare the rise in the gap with the fall in HCO3. A normal (or high) HCO3 with a clearly raised
+// gap means a metabolic alkalosis is hiding the acidosis — pH, pCO2 and HCO3 can then all look normal.
+function deltaAnalysis(g, hco3) {
+  const dAG = g.use - 12, dH = 24 - hco3, pre = hco3 + dAG;
+  const preLine = `HCO3 before the extra acid ≈ ${r0(pre)} mmol/L (HCO3 ${hco3} + ΔAG ${r1(dAG)})`;
+  if (dH <= 0) {
+    if (dAG >= 4) return { ratio: null, alk: true, nagma: false, lines: [`The gap rose by ${r1(dAG)} but HCO3 has not fallen (${hco3}) → a metabolic alkalosis is also present`, `${preLine} — above normal`] };
+    return { ratio: null, alk: false, nagma: false, lines: ['Gap only slightly raised with a normal HCO3 — recheck; it may be lab variation'] };
+  }
+  const ratio = dAG / dH, out = { ratio, alk: ratio > 2, nagma: ratio < 0.8, lines: [`Delta ratio ${r2(ratio)} (ΔAG ${r1(dAG)} / ΔHCO3 ${r1(dH)}) → ${deltaText(ratio)}`] };
+  if (out.alk) out.lines.push(`${preLine} — above normal`);
+  if (out.nagma) out.lines.push(`${preLine} — HCO3 was already low before the gap rose`);
+  return out;
 }
 
 // ---- AHA PREVENT equations (Khan SS et al., Circulation 2024;149:430–49): base and base + UACR models, 10-year and 30-year ----
@@ -458,10 +486,12 @@ const CALCS = [
       const g = anionGap(v);
       if (!g) return null;
       if (g.use <= 12) return { main: 'Anion gap not raised', level: 'ok', lines: ['The delta ratio applies to a high anion gap acidosis'], text: `AG ${r1(g.use)} — not raised` };
-      if (v.hco3 >= 24) return { main: 'HCO3 not low', level: 'warn', lines: ['High anion gap with normal or high HCO3 suggests an added metabolic alkalosis'], text: `AG ${r1(g.use)} with HCO3 ${v.hco3}` };
-      const dr = (g.use - 12) / (24 - v.hco3);
-      return { main: `Delta ratio ${r2(dr)}`, level: 'warn', lines: [`ΔAG ${r1(g.use - 12)} / ΔHCO3 ${r1(24 - v.hco3)}`, deltaText(dr).replace(/^./, c => c.toUpperCase())],
-        text: `Delta ratio ${r2(dr)} — ${deltaText(dr)}` };
+      const da = deltaAnalysis(g, v.hco3);
+      if (da.ratio === null) return da.alk
+        ? { main: 'High anion gap acidosis + metabolic alkalosis', level: 'high', lines: da.lines, text: `AG ${r1(g.use)} with HCO3 ${v.hco3}: high anion gap acidosis + metabolic alkalosis` }
+        : { main: 'Anion gap slightly raised, HCO3 normal', level: 'warn', lines: da.lines, text: `AG ${r1(g.use)} with HCO3 ${v.hco3}` };
+      return { main: `Delta ratio ${r2(da.ratio)}`, level: da.alk ? 'high' : 'warn', lines: [...da.lines, deltaText(da.ratio).replace(/^./, c => c.toUpperCase())],
+        text: `Delta ratio ${r2(da.ratio)} — ${deltaText(da.ratio)}` };
     },
     ref: 'Rastegar A. J Am Soc Nephrol 2007;18:2429–31'
   },

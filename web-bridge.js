@@ -10,7 +10,7 @@
  */
 (() => {
   'use strict';
-  const VERSION = '0.8.2 web';
+  const VERSION = '0.8.3 web';
   const DB_NAME = 'roundnotes', STORE = 'kv', ITER = 150000;
   const te = new TextEncoder(), td = new TextDecoder();
   const subtle = window.crypto && window.crypto.subtle;

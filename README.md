@@ -5,13 +5,13 @@ Home Screen. It works offline after the first visit. Patient data is stored only
 key that is itself locked by the user's PIN, and the page is not allowed to send anything over the network.
 
 ## Put it on GitHub Pages (once)
-1. On github.com, create a new repository named **roundnotes**. Make it **Public** (free GitHub Pages needs a public
+1. On github.com, create a new repository named **rounds**. Make it **Public** (free GitHub Pages needs a public
    repository; it holds only the app's code, never patient data).
 2. In the new repository, choose **uploading an existing file**. Drag in **everything inside this folder**
    (all files and the `icons` folder — not the folder itself). Click **Commit changes**.
 3. Open **Settings → Pages**. Under *Build and deployment*, choose **Deploy from a branch**, branch **main**,
    folder **/ (root)**, and **Save**.
-4. After a minute or two the app is live at **https://izzatahmed.github.io/roundnotes/**
+4. After a minute or two the app is live at **https://izzatahmed.github.io/rounds/**
 
 ## Students on iPhone or iPad
 1. Open the link in **Safari**.
